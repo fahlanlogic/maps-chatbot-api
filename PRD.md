@@ -323,7 +323,15 @@ Request
 
 ```json
 {
-  "message": "Where should I eat sushi in Batam?"
+  "message": [
+    {
+      "role": "user",
+      "content": "Where should I eat sushi in Batam?"
+    }
+  ],
+  "options": {
+    "stream": true
+  }
 }
 ```
 
@@ -333,15 +341,21 @@ Response
 {
   "success": true,
   "data": {
-    "answer": "...",
+    "message": {
+      "role": "assistant",
+      "content": "I recommend Sushi Tei Batam Center because..."
+    },
     "places": [
       {
-        "name": "...",
-        "rating": 4.8,
+        "id": "ChIJ...",
+        "name": "Sushi Tei Batam Center",
         "address": "...",
-        "latitude": 1.111,
-        "longitude": 104.111,
-        "mapsUrl": "..."
+        "rating": 4.7,
+        "location": {
+          "lat": 1.1301,
+          "lng": 104.0542
+        },
+        "mapsUrl": "https://..."
       }
     ]
   }

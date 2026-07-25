@@ -2,7 +2,7 @@
 
 ## Overview
 
-A chat interface where users ask location-based questions (e.g. *"Where should I eat sushi?"*, *"Best coffee shop nearby"*) and receive an AI-generated answer with Google Places data. The backend orchestrates communication between the frontend, a local LLM (Ollama), and Google Places API — the frontend never calls external services directly.
+A chat interface where users ask location-based questions (e.g. _"Where should I eat sushi?"_, _"Best coffee shop nearby"_) and receive an AI-generated answer with Google Places data. The backend orchestrates communication between the frontend, a local LLM (Ollama), and Google Places API — the frontend never calls external services directly.
 
 ---
 
@@ -12,7 +12,7 @@ A chat interface where users ask location-based questions (e.g. *"Where should I
 Frontend
     │
     ▼
-POST /api/chat  { message: string }
+POST /api/chat  { message: [{ role, content }], options: { stream } }
     │
     ▼
 Validate Request (Zod)
@@ -49,7 +49,15 @@ Frontend sends `POST /api/chat`:
 
 ```json
 {
-  "message": "Where should I eat sushi in Batam?"
+  "message": [
+    {
+      "role": "user",
+      "content": "Where should I eat sushi in Batam?"
+    }
+  ],
+  "options": {
+    "stream": true
+  }
 }
 ```
 
@@ -79,15 +87,21 @@ The normalized Places data is fed back to the LLM, which generates a natural-lan
 {
   "success": true,
   "data": {
-    "answer": "Here are the best sushi places in Batam...",
+    "message": {
+      "role": "assistant",
+      "content": "I recommend Sushi Tei Batam Center because..."
+    },
     "places": [
       {
-        "name": "Sushi Restaurant A",
-        "rating": 4.8,
-        "address": "Batam Center",
-        "latitude": 1.111,
-        "longitude": 104.111,
-        "mapsUrl": "https://www.google.com/maps/place/..."
+        "id": "ChIJ...",
+        "name": "Sushi Tei Batam Center",
+        "address": "...",
+        "rating": 4.7,
+        "location": {
+          "lat": 1.1301,
+          "lng": 104.0542
+        },
+        "mapsUrl": "https://..."
       }
     ]
   }
@@ -101,26 +115,42 @@ The normalized Places data is fed back to the LLM, which generates a natural-lan
 ### `POST /api/chat`
 
 **Request:**
+
 ```json
 {
-  "message": "string"
+  "message": [
+    {
+      "role": "user",
+      "content": "Where should I eat sushi in Batam?"
+    }
+  ],
+  "options": {
+    "stream": true
+  }
 }
 ```
 
 **Success Response (200):**
+
 ```json
 {
   "success": true,
   "data": {
-    "answer": "string",
+    "message": {
+      "role": "assistant",
+      "content": "I recommend Sushi Tei Batam Center because..."
+    },
     "places": [
       {
-        "name": "string",
-        "rating": "number",
-        "address": "string",
-        "latitude": "number",
-        "longitude": "number",
-        "mapsUrl": "string"
+        "id": "ChIJ...",
+        "name": "Sushi Tei Batam Center",
+        "address": "...",
+        "rating": 4.7,
+        "location": {
+          "lat": 1.1301,
+          "lng": 104.0542
+        },
+        "mapsUrl": "https://..."
       }
     ]
   }
@@ -128,6 +158,7 @@ The normalized Places data is fed back to the LLM, which generates a natural-lan
 ```
 
 **Error Response:**
+
 ```json
 {
   "success": false,
@@ -139,14 +170,14 @@ The normalized Places data is fed back to the LLM, which generates a natural-lan
 
 ## Response Format Rules
 
-| Scenario | HTTP Code |
-|---|---|
-| Success | 200 |
-| Bad Request | 400 |
-| Validation Error | 422 |
-| Rate Limited | 429 |
-| Internal Error | 500 |
-| Service Unavailable | 503 |
+| Scenario            | HTTP Code |
+| ------------------- | --------- |
+| Success             | 200       |
+| Bad Request         | 400       |
+| Validation Error    | 422       |
+| Rate Limited        | 429       |
+| Internal Error      | 500       |
+| Service Unavailable | 503       |
 
 Never expose stack traces.
 
@@ -176,11 +207,11 @@ External API (Google Places, Ollama)
 
 ## Key Components
 
-| Component | File | Responsibility |
-|---|---|---|
-| `POST /api/chat` | `src/routes/chat.ts` | Validate input, delegate to service |
-| Conversation Service | `src/services/conversation.ts` | Orchestrate LLM + Places flow |
-| LLM Provider | `src/providers/llm/ollama.ts` | Call Ollama, parse intent |
+| Component              | File                             | Responsibility                         |
+| ---------------------- | -------------------------------- | -------------------------------------- |
+| `POST /api/chat`       | `src/routes/chat.ts`             | Validate input, delegate to service    |
+| Conversation Service   | `src/services/conversation.ts`   | Orchestrate LLM + Places flow          |
+| LLM Provider           | `src/providers/llm/ollama.ts`    | Call Ollama, parse intent              |
 | Google Places Provider | `src/providers/places/google.ts` | Query Google Places, normalize results |
 
 ---
@@ -188,12 +219,14 @@ External API (Google Places, Ollama)
 ## Provider Replaceability
 
 **LLM Providers:**
+
 - `OllamaProvider` (current)
 - `OpenAIProvider` (future)
 - `ClaudeProvider` (future)
 - `GeminiProvider` (future)
 
 **Maps Providers:**
+
 - `GooglePlacesProvider` (current)
 - `MapboxProvider` (future)
 - `HereProvider` (future)
@@ -241,12 +274,12 @@ No secrets hardcoded.
 
 ## Non-Functional Requirements
 
-| Concern | Requirement |
-|---|---|
-| Validation | Zod on every endpoint |
-| Logging | Pino — log requests, response time, errors; never log secrets |
-| Rate Limiting | 100 req/min/IP |
-| Timeouts | Google Places: 5s, LLM: 60s |
-| Retries | 3 retries with exponential backoff (transient failures only) |
-| Security | Helmet, CORS, env vars |
-| Error Handling | Global error handler, no try/catch in controllers |
+| Concern        | Requirement                                                   |
+| -------------- | ------------------------------------------------------------- |
+| Validation     | Zod on every endpoint                                         |
+| Logging        | Pino — log requests, response time, errors; never log secrets |
+| Rate Limiting  | 100 req/min/IP                                                |
+| Timeouts       | Google Places: 5s, LLM: 60s                                   |
+| Retries        | 3 retries with exponential backoff (transient failures only)  |
+| Security       | Helmet, CORS, env vars                                        |
+| Error Handling | Global error handler, no try/catch in controllers             |
