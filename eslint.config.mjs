@@ -7,7 +7,7 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig(
   {
-    ignores: ["eslint.config.mjs", "dist/"],
+    ignores: ["eslint.config.mjs", "dist/", "preload.js"],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

@@ -1,12 +1,21 @@
-import { test } from 'node:test'
-import * as assert from 'node:assert'
-import { build } from '../helper'
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-floating-promises */
+import { test } from "node:test";
+import * as assert from "node:assert";
+import { build } from "../helper";
 
-test('default root route', async (t) => {
-  const app = await build(t)
+test("GET /health returns ok", async (t) => {
+  const app = await build(t);
+  const res = await app.inject({ method: "GET", url: "/health" });
+  assert.strictEqual(res.statusCode, 200);
+  assert.deepStrictEqual(res.json(), { status: "ok" });
+});
 
-  const res = await app.inject({
-    url: '/'
-  })
-  assert.deepStrictEqual(JSON.parse(res.payload), { root: true })
-})
+test("GET /version returns name and version", async (t) => {
+  const app = await build(t);
+  const res = await app.inject({ method: "GET", url: "/version" });
+  assert.strictEqual(res.statusCode, 200);
+  assert.deepStrictEqual(res.json(), {
+    name: "MapsChatbot AI Backend",
+    version: "1.0.0",
+  });
+});
