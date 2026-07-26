@@ -1,5 +1,6 @@
 import { config } from "../../config";
 import type { Message, ChatResponse, LLMProvider } from "./llm-provider";
+import { cleanResponse } from "../../utils";
 
 interface OllamaChatRequest {
   model: string;
@@ -43,7 +44,7 @@ export class OllamaProvider implements LLMProvider {
             {
               role: "system",
               content:
-                "You are MapPilot, an AI assistant for finding places. Rules: - Answer directly. - Maximum 2 sentences. - Never explain your reasoning. - Never output thinking. - Never output <think> tags. - Never repeat yourself. - Never repeat the user's question. - If a tool is required, call it. - If no tool is required, answer immediately.",
+                "You are MapPilot, an AI assistant for finding places. Rules: - Reply only with the final answer. - Never reveal internal reasoning. - Never output analysis or thinking. - Keep replies under 50 words unless the user asks for details. - Use tools only when needed.",
             },
           ]),
       ...messages.map((m) => ({ role: m.role, content: m.content })),
@@ -56,7 +57,7 @@ export class OllamaProvider implements LLMProvider {
       think: false,
       options: {
         temperature: 0.2,
-        num_predict: 120,
+        num_predict: 64,
       },
       tools: [
         {
@@ -114,8 +115,4 @@ export class OllamaProvider implements LLMProvider {
       content: cleanResponse(data.message.content),
     };
   }
-}
-
-function cleanResponse(content: string): string {
-  return content.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
